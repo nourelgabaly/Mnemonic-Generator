@@ -1,196 +1,95 @@
 import { useState } from "react";
-import axios from "axios";
+import Login from "../src/Pages/Login";
+import Signup from "../src/Pages/Signup";
+import Dashboard from "../src/Pages/Dashboard";
+import ForgotPassword from "../src/Pages/ForgotPassword";
+import "./index.css";
 
-function App() {
-  const [word, setWord] = useState("");
-  const [context, setContext] = useState("");
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+export default function App() {
+  const [page, setPage] = useState("login");
+  const [user, setUser] = useState(null);
+  const [confirmationEmail, setConfirmationEmail] = useState("");
 
-  const handleGenerate = async () => {
-    if (!word.trim()) return;
-    setLoading(true);
-    setError("");
-    setResult(null);
-
-    try {
-      const response = await axios.post("http://localhost:8000/generate", {
-        word,
-        context
-      });
-      setResult(response.data);
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setPage("dashboard");
   };
 
-  return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Visual Mnemonic Generator</h1>
-      <p style={styles.subtitle}>Enter any word or concept to generate a memory aid</p>
+  const handleSignup = (userData) => {
+    setConfirmationEmail(userData.email);
+    setPage("confirm");
+  };
 
-      <div style={styles.card}>
-        <input
-          style={styles.input}
-          type="text"
-          placeholder="Enter a word or concept (e.g. Photosynthesis)"
-          value={word}
-          onChange={(e) => setWord(e.target.value)}
-        />
-        <textarea
-          style={styles.textarea}
-          placeholder="Optional: add a sentence or context"
-          value={context}
-          onChange={(e) => setContext(e.target.value)}
-          rows={3}
-        />
-        <button
-          style={loading ? styles.buttonDisabled : styles.button}
-          onClick={handleGenerate}
-          disabled={loading}
-        >
-          {loading ? "Generating..." : "Generate Mnemonic"}
+  const handleLogout = () => {
+    setUser(null);
+    setPage("login");
+  };
+
+  if (page === "login") return (
+    <Login
+      onLogin={handleLogin}
+      onGoSignup={() => setPage("signup")}
+      onGoForgot={() => setPage("forgot")}
+    />
+  );
+
+  if (page === "signup") return (
+    <Signup
+      onSignup={handleSignup}
+      onGoLogin={() => setPage("login")}
+    />
+  );
+
+  if (page === "forgot") return (
+    <ForgotPassword onGoLogin={() => setPage("login")} />
+  );
+
+  if (page === "confirm") return (
+    <div style={cs.page}>
+      <div style={cs.box}>
+        <div style={cs.icon}>✉</div>
+        <h2 style={cs.title}>Check your inbox</h2>
+        <p style={cs.text}>
+          We sent a confirmation link to <strong>{confirmationEmail}</strong>.
+          Please confirm your email before signing in.
+        </p>
+        <button style={cs.btn} onClick={() => setPage("login")}>
+          Go to sign in
         </button>
       </div>
-
-      {error && <p style={styles.error}>{error}</p>}
-
-      {result && (
-        <div style={styles.resultCard}>
-          <h2 style={styles.word}>{result.word}</h2>
-          <div style={styles.row}>
-            <div style={styles.textSection}>
-              <p><span style={styles.label}>Meaning:</span> {result.simple_meaning}</p>
-              <p><span style={styles.label}>Technique:</span> {result.technique}</p>
-              <p><span style={styles.label}>Mnemonic:</span> {result.mnemonic}</p>
-            </div>
-            <div style={styles.imageSection}>
-              <img
-                src={result.image_url}
-                alt={`Mnemonic for ${result.word}`}
-                style={styles.image}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
+
+  return <Dashboard user={user} onLogout={handleLogout} />;
 }
 
-const styles = {
-  container: {
-    maxWidth: "900px",
-    margin: "0 auto",
-    padding: "40px 20px",
-    fontFamily: "Arial, sans-serif",
-    backgroundColor: "#f5f5f5",
-    minHeight: "100vh"
+const cs = {
+  page: {
+    minHeight: "100vh", display: "flex",
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: "var(--cream)",
+  },
+  box: {
+    backgroundColor: "white", borderRadius: "20px",
+    padding: "56px 48px", maxWidth: "440px", width: "90%",
+    display: "flex", flexDirection: "column", alignItems: "center",
+    gap: "16px", textAlign: "center",
+    boxShadow: "0 2px 16px rgba(14,50,82,0.08)",
+  },
+  icon: {
+    width: "64px", height: "64px", borderRadius: "50%",
+    backgroundColor: "var(--sage)", display: "flex",
+    alignItems: "center", justifyContent: "center",
+    fontSize: "28px",
   },
   title: {
-    textAlign: "center",
-    color: "#2c3e50",
-    fontSize: "2rem",
-    marginBottom: "8px"
+    fontFamily: "Cormorant Garamond, serif", fontSize: "36px",
+    fontWeight: "500", color: "var(--navy)",
   },
-  subtitle: {
-    textAlign: "center",
-    color: "#7f8c8d",
-    marginBottom: "30px"
+  text: { fontSize: "15px", color: "var(--teal)", lineHeight: "1.7" },
+  btn: {
+    marginTop: "8px", padding: "14px 32px", fontSize: "15px",
+    backgroundColor: "var(--navy)", color: "var(--cream)",
+    border: "none", borderRadius: "10px", cursor: "pointer", fontWeight: "600",
   },
-  card: {
-    backgroundColor: "white",
-    borderRadius: "12px",
-    padding: "24px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px"
-  },
-  input: {
-    padding: "12px",
-    fontSize: "16px",
-    borderRadius: "8px",
-    border: "1px solid #ddd",
-    outline: "none"
-  },
-  textarea: {
-    padding: "12px",
-    fontSize: "14px",
-    borderRadius: "8px",
-    border: "1px solid #ddd",
-    outline: "none",
-    resize: "vertical"
-  },
-  button: {
-    padding: "14px",
-    fontSize: "16px",
-    backgroundColor: "#3498db",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "bold"
-  },
-  buttonDisabled: {
-    padding: "14px",
-    fontSize: "16px",
-    backgroundColor: "#95a5a6",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "not-allowed",
-    fontWeight: "bold"
-  },
-  error: {
-    color: "red",
-    textAlign: "center",
-    marginTop: "16px"
-  },
-  resultCard: {
-    backgroundColor: "white",
-    borderRadius: "12px",
-    padding: "24px",
-    marginTop: "24px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
-  },
-  word: {
-    color: "#2c3e50",
-    fontSize: "1.5rem",
-    marginBottom: "16px",
-    borderBottom: "2px solid #3498db",
-    paddingBottom: "8px"
-  },
-  row: {
-    display: "flex",
-    gap: "24px",
-    flexWrap: "wrap"
-  },
-  textSection: {
-    flex: 1,
-    minWidth: "250px",
-    lineHeight: "1.8",
-    color: "#2c3e50"
-  },
-  label: {
-    fontWeight: "bold",
-    color: "#3498db"
-  },
-  imageSection: {
-    flex: 1,
-    minWidth: "250px",
-    display: "flex",
-    justifyContent: "center"
-  },
-  image: {
-    width: "100%",
-    maxWidth: "400px",
-    borderRadius: "12px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
-  }
 };
-
-export default App;
