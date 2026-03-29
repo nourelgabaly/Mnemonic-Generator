@@ -18,6 +18,10 @@ def generate_mnemonic(word: str, context: str = "") -> dict:
        - Rhyme or rhythm
        - Storytelling (short memorable story)
        - Chunking (breaking it into parts)
+       - Association: Connecting new, hard-to-remember information with a familiar image (e.g., drawing a snake in the shape of the letter 'S' to help children remember its sound).
+       - Memory Palace (Loci System): Visualizing familiar locations (like rooms in a house) to store and recall information in specific, ordered spots.
+       - Rebus/Letter Imagery: Using pictures that look like letters or concepts, such as a flag shaped like the letter 'F'.
+       - Storyboarding: Creating a short, unique story with characters to remember a series of facts.
     3. Create a short, vivid mnemonic using that technique
     4. Write a DALL-E 3 style image prompt that visually captures the mnemonic
 
@@ -27,7 +31,7 @@ def generate_mnemonic(word: str, context: str = "") -> dict:
       "simple_meaning": "...",
       "technique": "...",
       "mnemonic": "...",
-      "image_prompt": "an educational illustration showing ..."
+      "image_prompt": "an illustration showing ..."
     }}
     """
 

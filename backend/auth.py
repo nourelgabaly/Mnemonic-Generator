@@ -45,3 +45,31 @@ def reset_password(email: str):
         )
     except Exception as e:
         raise ValueError(str(e))
+
+
+def save_generation(user_email: str, word: str, simple_meaning: str,
+                    technique: str, mnemonic: str, image_url: str):
+    try:
+        supabase.table("generations").insert({
+            "user_email": user_email,
+            "word": word,
+            "simple_meaning": simple_meaning,
+            "technique": technique,
+            "mnemonic": mnemonic,
+            "image_url": image_url
+        }).execute()
+    except Exception as e:
+        print(f"Failed to save generation: {e}")
+
+
+def get_generations(user_email: str) -> list:
+    try:
+        res = supabase.table("generations") \
+            .select("*") \
+            .eq("user_email", user_email) \
+            .order("created_at", desc=True) \
+            .execute()
+        return res.data or []
+    except Exception as e:
+        print(f"Failed to fetch generations: {e}")
+        return []

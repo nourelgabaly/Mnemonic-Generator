@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from mnemonic import generate_mnemonic
 from image_gen import generate_image
-from auth import signup_user, login_user, reset_password
+from auth import signup_user, login_user, reset_password, save_generation, get_generations
 import os
 
 app = FastAPI()
@@ -13,7 +14,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
 )
 
 os.makedirs("static", exist_ok=True)
@@ -23,6 +25,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 class MnemonicRequest(BaseModel):
     word: str
     context: str = ""
+    user_email: str = ""
 
 class SignupRequest(BaseModel):
     name: str
@@ -43,13 +46,54 @@ async def generate(req: MnemonicRequest):
         mnemonic_data = generate_mnemonic(req.word, req.context)
         image_file = generate_image(mnemonic_data["image_prompt"])
         image_url = f"http://localhost:8000/static/{image_file}"
-        return {
+
+        result = {
             "word": mnemonic_data["word"],
             "simple_meaning": mnemonic_data["simple_meaning"],
             "technique": mnemonic_data["technique"],
             "mnemonic": mnemonic_data["mnemonic"],
             "image_url": image_url
         }
+
+        if req.user_email:
+            save_generation(
+                user_email=req.user_email,
+                word=result["word"],
+                simple_meaning=result["simple_meaning"],
+                technique=result["technique"],
+                mnemonic=result["mnemonic"],
+                image_url=image_url
+            )
+
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/download")
+async def download(filename: str, word: str = "image"):
+    """
+    Serves a file from the static folder as a download attachment.
+    filename: just the file name, e.g. "abc123.png"
+    word:     used to build a friendly download name
+    """
+    file_path = os.path.join("static", filename)
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    safe_word = word.replace(" ", "_")
+    return FileResponse(
+        path=file_path,
+        media_type="image/png",
+        filename=f"membrain_{safe_word}.png",
+    )
+
+
+@app.get("/history/{user_email}")
+async def history(user_email: str):
+    try:
+        generations = get_generations(user_email)
+        return {"generations": generations}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
