@@ -5,40 +5,61 @@ from dotenv import load_dotenv
 load_dotenv()
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def generate_mnemonic(word: str, context: str = "") -> dict:
+def generate_mnemonic(word: str, native_language: str, target_language: str, context: str = "") -> dict:
     prompt = f"""
-    You are an expert memory coach. A student wants to memorize the concept: "{word}".
+    You are a world-class language learning expert specializing in the Keyword Method —
+    the most scientifically proven mnemonic technique for vocabulary retention.
+
+    A student whose native language is {native_language} is learning {target_language}.
+    They want to permanently remember this {target_language} word: "{word}"
     {"Additional context: " + context if context else ""}
 
-    Your job:
-    1. Identify what "{word}" means in simple terms
-    2. Choose the BEST mnemonic technique from:
-       - Visual association (linking to a vivid image)
-       - Acronym (first letters form a word)
-       - Rhyme or rhythm
-       - Storytelling (short memorable story)
-       - Chunking (breaking it into parts)
-       - Association: Connecting new, hard-to-remember information with a familiar image (e.g., drawing a snake in the shape of the letter 'S' to help children remember its sound).
-       - Memory Palace (Loci System): Visualizing familiar locations (like rooms in a house) to store and recall information in specific, ordered spots.
-       - Rebus/Letter Imagery: Using pictures that look like letters or concepts, such as a flag shaped like the letter 'F'.
-       - Storyboarding: Creating a short, unique story with characters to remember a series of facts.
-    3. Create a short, vivid mnemonic using that technique
-    4. Write a DALL-E 3 style image prompt that visually captures the mnemonic
+    THE KEYWORD METHOD — follow these steps exactly:
+
+    Step 1 — MEANING
+    Clearly define what "{word}" means in {native_language} (the student's native language).
+    Keep it simple and direct.
+
+    Step 2 — FIND THE KEYWORD (most important step)
+    Find a word or short phrase in {native_language} that sounds as similar as possible
+    to "{word}" or to part of "{word}".
+    This is called the "keyword". It must:
+    - Be a real, familiar word in {native_language} that the student already knows
+    - Sound phonetically similar to "{word}" or a part of it
+    - Be concrete and visualizable (not abstract)
+
+    Step 3 — CREATE THE BRIDGE
+    Write a short, vivid mnemonic sentence (1-2 sentences) that:
+    - Uses the keyword from Step 2
+    - Connects it to the MEANING of "{word}"
+    - Creates an unforgettable mental image linking the sound to the meaning
+    - Is slightly surprising or amusing so it sticks
+
+    Step 4 — IMAGE PROMPT
+    Write a DALL-E 3 image prompt that illustrates the mnemonic bridge.
+    The image must show the keyword visually connected to the meaning of "{word}".
+    It should be a clean, striking illustration — beautiful colors, one clear scene,
+    no text or labels in the image.
+    The image should make the connection between the keyword sound and the word meaning
+    immediately obvious when the student looks at it.
 
     Respond ONLY in this exact JSON format, no extra text, no markdown:
     {{
       "word": "{word}",
-      "simple_meaning": "...",
-      "technique": "...",
-      "mnemonic": "...",
-      "image_prompt": "an illustration showing ..."
+      "target_language": "{target_language}",
+      "native_language": "{native_language}",
+      "meaning": "meaning of {word} written in {native_language}",
+      "keyword": "the similar-sounding word in {native_language}",
+      "keyword_similarity": "brief explanation of the phonetic similarity",
+      "mnemonic": "the bridge sentence written in {native_language}",
+      "image_prompt": "..."
     }}
     """
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.7
+        temperature=0.8
     )
 
     text = response.choices[0].message.content.strip()

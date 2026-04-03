@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from mnemonic import generate_mnemonic
 from image_gen import generate_image
@@ -14,8 +13,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
     allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["Content-Disposition"],
+    allow_headers=["*"]
 )
 
 os.makedirs("static", exist_ok=True)
@@ -24,6 +22,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class MnemonicRequest(BaseModel):
     word: str
+    native_language: str = "Arabic"
+    target_language: str = "English"
     context: str = ""
     user_email: str = ""
 
@@ -43,14 +43,22 @@ class ResetRequest(BaseModel):
 @app.post("/generate")
 async def generate(req: MnemonicRequest):
     try:
-        mnemonic_data = generate_mnemonic(req.word, req.context)
+        mnemonic_data = generate_mnemonic(
+            word=req.word,
+            native_language=req.native_language,
+            target_language=req.target_language,
+            context=req.context
+        )
         image_file = generate_image(mnemonic_data["image_prompt"])
         image_url = f"http://localhost:8000/static/{image_file}"
 
         result = {
             "word": mnemonic_data["word"],
-            "simple_meaning": mnemonic_data["simple_meaning"],
-            "technique": mnemonic_data["technique"],
+            "target_language": mnemonic_data["target_language"],
+            "native_language": mnemonic_data["native_language"],
+            "meaning": mnemonic_data["meaning"],
+            "keyword": mnemonic_data["keyword"],
+            "keyword_similarity": mnemonic_data["keyword_similarity"],
             "mnemonic": mnemonic_data["mnemonic"],
             "image_url": image_url
         }
@@ -59,8 +67,8 @@ async def generate(req: MnemonicRequest):
             save_generation(
                 user_email=req.user_email,
                 word=result["word"],
-                simple_meaning=result["simple_meaning"],
-                technique=result["technique"],
+                simple_meaning=result["meaning"],
+                technique=f"Keyword Method ({result['native_language']} → {result['target_language']})",
                 mnemonic=result["mnemonic"],
                 image_url=image_url
             )
@@ -68,25 +76,6 @@ async def generate(req: MnemonicRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/download")
-async def download(filename: str, word: str = "image"):
-    """
-    Serves a file from the static folder as a download attachment.
-    filename: just the file name, e.g. "abc123.png"
-    word:     used to build a friendly download name
-    """
-    file_path = os.path.join("static", filename)
-    if not os.path.isfile(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-
-    safe_word = word.replace(" ", "_")
-    return FileResponse(
-        path=file_path,
-        media_type="image/png",
-        filename=f"membrain_{safe_word}.png",
-    )
 
 
 @app.get("/history/{user_email}")

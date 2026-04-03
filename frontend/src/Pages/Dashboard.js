@@ -2,11 +2,19 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { HiOutlineDownload } from "react-icons/hi";
 import { MdOutlineAutoAwesome } from "react-icons/md";
-import { TbHistory, TbLogout } from "react-icons/tb";
+import { TbHistory, TbLogout, TbLanguage } from "react-icons/tb";
+
+const LANGUAGES = [
+  "Arabic", "English", "French", "Spanish", "German",
+  "Italian", "Portuguese", "Chinese", "Japanese", "Korean",
+  "Turkish", "Russian", "Hindi", "Dutch", "Polish"
+];
 
 export default function Dashboard({ user, onLogout }) {
   const [word, setWord] = useState("");
   const [context, setContext] = useState("");
+  const [nativeLang, setNativeLang] = useState("Arabic");
+  const [targetLang, setTargetLang] = useState("English");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -14,33 +22,33 @@ export default function Dashboard({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState("generate");
   const [downloading, setDownloading] = useState(false);
 
-  // Load full history on mount
-  useEffect(() => {
-    fetchHistory();
-  }, []);
+  useEffect(() => { fetchHistory(); }, []);
 
   const fetchHistory = async () => {
     try {
       const res = await axios.get(`http://localhost:8000/history/${user.email}`);
       setHistory(res.data.generations || []);
-    } catch {
-      console.error("Failed to load history");
-    }
+    } catch { console.error("Failed to load history"); }
   };
 
   const handleGenerate = async () => {
     if (!word.trim()) return;
+    if (nativeLang === targetLang) {
+      setError("Native language and target language must be different.");
+      return;
+    }
     setLoading(true);
     setError("");
     setResult(null);
     try {
       const res = await axios.post("http://localhost:8000/generate", {
         word,
+        native_language: nativeLang,
+        target_language: targetLang,
         context,
         user_email: user.email
       });
       setResult(res.data);
-      // Refresh history after generation
       fetchHistory();
     } catch {
       setError("Something went wrong. Please try again.");
@@ -53,49 +61,61 @@ export default function Dashboard({ user, onLogout }) {
     if (e.key === "Enter" && !e.shiftKey) handleGenerate();
   };
 
-  const handleDownload = (imageUrl, wordName) => {
-    const filename = imageUrl.split("/static/")[1];
-    const downloadUrl = `http://localhost:8000/download?filename=${encodeURIComponent(filename)}&word=${encodeURIComponent(wordName)}`;
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download = `membrain_${wordName.replace(/\s+/g, "_")}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const handleDownload = async (imageUrl, wordName) => {
+    setDownloading(true);
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `membrain_${wordName.replace(/\s+/g, "_")}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch { alert("Download failed. Please try again."); }
+    finally { setDownloading(false); }
   };
 
   return (
     <div style={s.page}>
-      {/* Sidebar */}
       <aside style={s.sidebar}>
         <div style={s.brand}>
-          <img
-            src="/membrain-clear-logo.png"
-            alt="MemBrain"
-            style={{ height: "38px", width: "38px", objectFit: "contain", filter: "brightness(0) invert(1)", flexShrink: 0 }}
-          />
+          <img src="/membrain_logo.png" alt="MemBrain"
+            style={{ height: "38px", width: "38px", objectFit: "contain", filter: "brightness(0) invert(1)", flexShrink: 0 }} />
           <span style={{ ...s.brandName, lineHeight: 1 }}>MemBrain</span>
         </div>
 
         <nav style={s.nav}>
-          <div
-            style={activeTab === "generate" ? s.navItemActive : s.navItem}
-            onClick={() => setActiveTab("generate")}
-          >
-            <MdOutlineAutoAwesome size={18} />
-            <span>Generate</span>
+          <div style={activeTab === "generate" ? s.navItemActive : s.navItem} onClick={() => setActiveTab("generate")}>
+            <MdOutlineAutoAwesome size={18} /><span>Generate</span>
           </div>
-          <div
-            style={activeTab === "history" ? s.navItemActive : s.navItem}
-            onClick={() => setActiveTab("history")}
-          >
-            <TbHistory size={18} />
-            <span>All Generations</span>
-            {history.length > 0 && (
-              <span style={s.badge}>{history.length}</span>
-            )}
+          <div style={activeTab === "history" ? s.navItemActive : s.navItem} onClick={() => setActiveTab("history")}>
+            <TbHistory size={18} /><span>All Generations</span>
+            {history.length > 0 && <span style={s.badge}>{history.length}</span>}
           </div>
         </nav>
+
+        {/* Language settings in sidebar */}
+        <div style={s.langSection}>
+          <p style={s.langTitle}><TbLanguage size={14} style={{ marginRight: 6 }} />Language Settings</p>
+          <div style={s.langField}>
+            <label style={s.langLabel}>My language</label>
+            <select style={s.select} value={nativeLang} onChange={e => setNativeLang(e.target.value)}>
+              {LANGUAGES.map(l => <option key={l}>{l}</option>)}
+            </select>
+          </div>
+          <div style={s.langField}>
+            <label style={s.langLabel}>I'm learning</label>
+            <select style={s.select} value={targetLang} onChange={e => setTargetLang(e.target.value)}>
+              {LANGUAGES.map(l => <option key={l}>{l}</option>)}
+            </select>
+          </div>
+          {nativeLang === targetLang && (
+            <p style={s.langWarning}>Select two different languages</p>
+          )}
+        </div>
 
         <div style={s.userSection}>
           <div style={s.avatar}>{user?.name?.[0]?.toUpperCase() || "U"}</div>
@@ -109,53 +129,56 @@ export default function Dashboard({ user, onLogout }) {
         </div>
       </aside>
 
-      {/* Main content */}
       <main style={s.main}>
 
-        {/* GENERATE TAB */}
         {activeTab === "generate" && (
           <>
             <div style={s.topBar}>
               <div>
                 <h1 style={s.pageTitle}>Visual Mnemonic Generator</h1>
-                <p style={s.pageSubtitle}>Enter any concept to generate a memorable visual aid</p>
+                <p style={s.pageSubtitle}>
+                  Using the Keyword Method — enter a {targetLang} word to get a memorable visual mnemonic in {nativeLang}
+                </p>
               </div>
             </div>
 
             <div style={s.inputCard}>
+              <div style={s.langPill}>
+                <span style={s.langPillText}>{nativeLang}</span>
+                <span style={s.langArrow}>→</span>
+                <span style={s.langPillText}>{targetLang}</span>
+              </div>
+
               <div style={s.inputRow}>
                 <div style={s.inputGroup}>
-                  <label style={s.label}>Concept or word</label>
+                  <label style={s.label}>
+                    {targetLang} word to remember
+                  </label>
                   <input
                     style={s.input}
                     type="text"
-                    placeholder="e.g. Photosynthesis, The French Revolution, Pythagorean Theorem..."
+                    placeholder={`e.g. Ephemeral, Benevolent, Melancholy...`}
                     value={word}
                     onChange={e => setWord(e.target.value)}
                     onKeyDown={handleKeyDown}
                   />
                 </div>
                 <button
-                  style={loading || !word.trim() ? s.btnDisabled : s.btn}
+                  style={loading || !word.trim() || nativeLang === targetLang ? s.btnDisabled : s.btn}
                   onClick={handleGenerate}
-                  disabled={loading || !word.trim()}
+                  disabled={loading || !word.trim() || nativeLang === targetLang}
                 >
                   {loading ? (
-                    <span style={s.btnInner}>
-                      <span style={s.spinner} />
-                      Generating
-                    </span>
+                    <span style={s.btnInner}><span style={s.spinner} />Generating</span>
                   ) : "Generate"}
                 </button>
               </div>
 
               <div style={s.contextRow}>
-                <label style={s.label}>
-                  Context <span style={s.optional}>(optional)</span>
-                </label>
+                <label style={s.label}>Context <span style={s.optional}>(optional)</span></label>
                 <textarea
                   style={s.textarea}
-                  placeholder="Add extra context or the sentence where you encountered this word..."
+                  placeholder="Add a sentence where you encountered this word..."
                   value={context}
                   onChange={e => setContext(e.target.value)}
                   rows={2}
@@ -172,7 +195,7 @@ export default function Dashboard({ user, onLogout }) {
                   <span style={{ ...s.dot, animationDelay: "0.2s" }} />
                   <span style={{ ...s.dot, animationDelay: "0.4s" }} />
                 </div>
-                <p style={s.loadingText}>Crafting your mnemonic and illustration...</p>
+                <p style={s.loadingText}>Finding your keyword bridge and generating illustration...</p>
               </div>
             )}
 
@@ -183,10 +206,13 @@ export default function Dashboard({ user, onLogout }) {
             {!result && !loading && !error && (
               <div style={s.emptyState}>
                 <div style={s.emptyIcon}>◈</div>
-                <h3 style={s.emptyTitle}>Ready to memorize</h3>
-                <p style={s.emptyText}>Type any concept above and hit Generate — works for any subject.</p>
+                <h3 style={s.emptyTitle}>How it works</h3>
+                <p style={s.emptyText}>
+                  MemBrain finds a word in your language that <em>sounds like</em> the foreign word,
+                  then creates a visual bridge that makes it impossible to forget.
+                </p>
                 <div style={s.exampleRow}>
-                  {["Mitosis", "World War II", "Pythagorean Theorem", "Photosynthesis"].map(ex => (
+                  {["Ephemeral", "Benevolent", "Grave", "Veil", "Melancholy"].map(ex => (
                     <span key={ex} style={s.exampleChip} onClick={() => setWord(ex)}>{ex}</span>
                   ))}
                 </div>
@@ -195,7 +221,6 @@ export default function Dashboard({ user, onLogout }) {
           </>
         )}
 
-        {/* HISTORY TAB */}
         {activeTab === "history" && (
           <>
             <div style={s.topBar}>
@@ -217,11 +242,7 @@ export default function Dashboard({ user, onLogout }) {
                   <div key={i} style={s.historyCard}>
                     <div style={s.historyImageWrapper}>
                       <img src={item.image_url} alt={item.word} style={s.historyImage} />
-                      <button
-                        style={s.downloadOverlay}
-                        onClick={() => handleDownload(item.image_url, item.word)}
-                        title="Download image"
-                      >
+                      <button style={s.downloadOverlay} onClick={() => handleDownload(item.image_url, item.word)} title="Download">
                         <HiOutlineDownload size={18} color="white" />
                       </button>
                     </div>
@@ -233,9 +254,7 @@ export default function Dashboard({ user, onLogout }) {
                       <p style={s.historyMeaning}>{item.simple_meaning}</p>
                       <p style={s.historyMnemonic}>{item.mnemonic}</p>
                       <p style={s.historyDate}>
-                        {new Date(item.created_at).toLocaleDateString("en-US", {
-                          month: "short", day: "numeric", year: "numeric"
-                        })}
+                        {new Date(item.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </p>
                     </div>
                   </div>
@@ -247,12 +266,9 @@ export default function Dashboard({ user, onLogout }) {
       </main>
 
       <style>{`
-        @keyframes bounce {
-          0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-          40% { transform: translateY(-8px); opacity: 1; }
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .download-overlay:hover { opacity: 1 !important; }
+        @keyframes bounce { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-8px);opacity:1} }
+        @keyframes spin { to{transform:rotate(360deg)} }
+        select option { background: white; color: #0E3252; }
       `}</style>
     </div>
   );
@@ -263,8 +279,11 @@ function ResultCard({ result, onDownload, downloading }) {
     <div style={s.resultCard}>
       <div style={s.resultHeader}>
         <div>
+          <div style={s.resultLangBadge}>
+            {result.native_language} → {result.target_language}
+          </div>
           <h2 style={s.resultWord}>{result.word}</h2>
-          <span style={s.techniqueBadge}>{result.technique}</span>
+          <p style={s.resultMeaning}>{result.meaning}</p>
         </div>
         <button
           style={downloading ? s.downloadBtnDisabled : s.downloadBtn}
@@ -278,26 +297,39 @@ function ResultCard({ result, onDownload, downloading }) {
 
       <div style={s.resultBody}>
         <div style={s.textCol}>
-          <div style={s.infoBlock}>
-            <p style={s.infoLabel}>Definition</p>
-            <p style={s.infoText}>{result.simple_meaning}</p>
+
+          {/* Keyword bridge */}
+          <div style={s.keywordBox}>
+            <p style={s.keywordLabel}>Keyword bridge</p>
+            <div style={s.keywordRow}>
+              <div style={s.keywordItem}>
+                <span style={s.kwTag}>{result.target_language}</span>
+                <span style={s.kwWord}>{result.word}</span>
+              </div>
+              <span style={s.kwArrow}>sounds like</span>
+              <div style={s.keywordItem}>
+                <span style={s.kwTag}>{result.native_language}</span>
+                <span style={s.kwWord}>{result.keyword}</span>
+              </div>
+            </div>
+            <p style={s.kwSimilarity}>{result.keyword_similarity}</p>
           </div>
+
           <div style={s.divider} />
+
+          {/* Mnemonic */}
           <div style={s.infoBlock}>
             <p style={s.infoLabel}>Mnemonic</p>
             <p style={s.mnemonicText}>{result.mnemonic}</p>
           </div>
+
         </div>
 
         <div style={s.imageCol}>
           <div style={s.imageWrapper}>
-            <img
-              src={result.image_url}
-              alt={`Mnemonic for ${result.word}`}
-              style={s.image}
-            />
+            <img src={result.image_url} alt={`Mnemonic for ${result.word}`} style={s.image} />
           </div>
-          <p style={s.imageCaption}>AI-generated visual mnemonic</p>
+          <p style={s.imageCaption}>Visual keyword bridge</p>
         </div>
       </div>
     </div>
@@ -307,8 +339,8 @@ function ResultCard({ result, onDownload, downloading }) {
 const s = {
   page: { display: "flex", minHeight: "100vh", backgroundColor: "var(--cream)" },
   sidebar: {
-    width: "260px", backgroundColor: "var(--navy)", padding: "32px 24px",
-    display: "flex", flexDirection: "column", gap: "32px", flexShrink: 0,
+    width: "272px", backgroundColor: "var(--navy)", padding: "32px 24px",
+    display: "flex", flexDirection: "column", gap: "24px", flexShrink: 0,
   },
   brand: { display: "flex", alignItems: "center", gap: "12px" },
   brandName: {
@@ -317,31 +349,44 @@ const s = {
   },
   nav: { display: "flex", flexDirection: "column", gap: "4px" },
   navItem: {
-    display: "flex", alignItems: "center", gap: "10px",
-    padding: "10px 12px", borderRadius: "8px",
-    color: "var(--sage)", fontSize: "14px", cursor: "pointer",
+    display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px",
+    borderRadius: "8px", color: "var(--sage)", fontSize: "14px", cursor: "pointer",
   },
   navItemActive: {
-    display: "flex", alignItems: "center", gap: "10px",
-    padding: "10px 12px", borderRadius: "8px",
-    backgroundColor: "rgba(197,212,208,0.12)",
+    display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px",
+    borderRadius: "8px", backgroundColor: "rgba(197,212,208,0.12)",
     color: "var(--cream)", fontSize: "14px", cursor: "pointer",
     borderLeft: "2px solid var(--gold)",
   },
   badge: {
-    marginLeft: "auto", backgroundColor: "var(--gold)",
-    color: "var(--navy)", fontSize: "11px", fontWeight: "700",
-    padding: "2px 7px", borderRadius: "100px",
+    marginLeft: "auto", backgroundColor: "var(--gold)", color: "var(--navy)",
+    fontSize: "11px", fontWeight: "700", padding: "2px 7px", borderRadius: "100px",
   },
+  langSection: {
+    display: "flex", flexDirection: "column", gap: "10px",
+    padding: "16px", borderRadius: "10px",
+    backgroundColor: "rgba(197,212,208,0.08)",
+    border: "1px solid rgba(197,212,208,0.12)",
+  },
+  langTitle: {
+    fontSize: "11px", letterSpacing: "0.08em", textTransform: "uppercase",
+    color: "var(--sage)", fontWeight: "600", display: "flex", alignItems: "center",
+  },
+  langField: { display: "flex", flexDirection: "column", gap: "4px" },
+  langLabel: { fontSize: "11px", color: "rgba(197,212,208,0.6)", letterSpacing: "0.04em" },
+  select: {
+    padding: "8px 10px", fontSize: "13px", borderRadius: "8px",
+    border: "1px solid rgba(197,212,208,0.2)", backgroundColor: "rgba(14,50,82,0.6)",
+    color: "var(--cream)", outline: "none", cursor: "pointer", width: "100%",
+  },
+  langWarning: { fontSize: "11px", color: "#E8836A", marginTop: "2px" },
   userSection: {
     marginTop: "auto", display: "flex", alignItems: "center", gap: "10px",
-    padding: "12px", borderRadius: "10px",
-    backgroundColor: "rgba(197,212,208,0.08)",
+    padding: "12px", borderRadius: "10px", backgroundColor: "rgba(197,212,208,0.08)",
   },
   avatar: {
-    width: "32px", height: "32px", borderRadius: "50%",
-    backgroundColor: "var(--gold)", display: "flex",
-    alignItems: "center", justifyContent: "center",
+    width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--gold)",
+    display: "flex", alignItems: "center", justifyContent: "center",
     fontSize: "14px", color: "var(--navy)", fontWeight: "600", flexShrink: 0,
   },
   userInfo: { flex: 1, display: "flex", flexDirection: "column", gap: "1px", overflow: "hidden" },
@@ -357,6 +402,13 @@ const s = {
     display: "flex", flexDirection: "column", gap: "16px",
     boxShadow: "0 1px 4px rgba(14,50,82,0.06)",
   },
+  langPill: {
+    display: "flex", alignItems: "center", gap: "10px",
+    padding: "8px 14px", borderRadius: "100px",
+    backgroundColor: "var(--navy)", alignSelf: "flex-start",
+  },
+  langPillText: { fontSize: "13px", color: "var(--cream)", fontWeight: "500" },
+  langArrow: { fontSize: "14px", color: "var(--gold)" },
   inputRow: { display: "flex", gap: "12px", alignItems: "flex-end" },
   inputGroup: { flex: 1, display: "flex", flexDirection: "column", gap: "6px" },
   label: { fontSize: "11px", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--teal)", fontWeight: "600" },
@@ -395,9 +447,8 @@ const s = {
   },
   loadingDots: { display: "flex", gap: "8px" },
   dot: {
-    width: "10px", height: "10px", borderRadius: "50%",
-    backgroundColor: "var(--teal)", display: "inline-block",
-    animation: "bounce 1.2s ease-in-out infinite",
+    width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "var(--teal)",
+    display: "inline-block", animation: "bounce 1.2s ease-in-out infinite",
   },
   loadingText: { fontSize: "14px", color: "var(--teal)" },
   resultCard: { backgroundColor: "white", borderRadius: "16px", padding: "32px", boxShadow: "0 1px 4px rgba(14,50,82,0.06)" },
@@ -405,30 +456,54 @@ const s = {
     display: "flex", justifyContent: "space-between", alignItems: "flex-start",
     marginBottom: "28px", paddingBottom: "20px", borderBottom: "1px solid var(--sage)",
   },
-  resultWord: { fontFamily: "Cormorant Garamond, serif", fontSize: "40px", fontWeight: "500", color: "var(--navy)" },
-  techniqueBadge: {
-    display: "inline-block", marginTop: "8px", padding: "4px 12px",
-    borderRadius: "100px", backgroundColor: "var(--sage)", color: "var(--navy)",
-    fontSize: "12px", letterSpacing: "0.04em",
+  resultLangBadge: {
+    display: "inline-block", marginBottom: "8px", padding: "4px 12px",
+    borderRadius: "100px", backgroundColor: "var(--navy)", color: "var(--gold)",
+    fontSize: "12px", fontWeight: "600", letterSpacing: "0.04em",
   },
+  resultWord: { fontFamily: "Cormorant Garamond, serif", fontSize: "40px", fontWeight: "500", color: "var(--navy)" },
+  resultMeaning: { fontSize: "15px", color: "var(--teal)", marginTop: "4px" },
   downloadBtn: {
-    display: "flex", alignItems: "center", gap: "8px",
-    padding: "10px 18px", fontSize: "13px", fontWeight: "600",
-    backgroundColor: "var(--navy)", color: "var(--cream)",
-    border: "none", borderRadius: "8px", cursor: "pointer",
+    display: "flex", alignItems: "center", gap: "8px", padding: "10px 18px",
+    fontSize: "13px", fontWeight: "600", backgroundColor: "var(--navy)",
+    color: "var(--cream)", border: "none", borderRadius: "8px", cursor: "pointer",
   },
   downloadBtnDisabled: {
-    display: "flex", alignItems: "center", gap: "8px",
-    padding: "10px 18px", fontSize: "13px", fontWeight: "600",
-    backgroundColor: "var(--sage)", color: "var(--teal)",
-    border: "none", borderRadius: "8px", cursor: "not-allowed",
+    display: "flex", alignItems: "center", gap: "8px", padding: "10px 18px",
+    fontSize: "13px", fontWeight: "600", backgroundColor: "var(--sage)",
+    color: "var(--teal)", border: "none", borderRadius: "8px", cursor: "not-allowed",
   },
   resultBody: { display: "flex", gap: "40px" },
   textCol: { flex: 1, display: "flex", flexDirection: "column", gap: "20px" },
+  keywordBox: {
+    backgroundColor: "var(--cream)", borderRadius: "12px", padding: "18px",
+    border: "1.5px solid var(--sage)",
+  },
+  keywordLabel: {
+    fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase",
+    color: "var(--teal)", fontWeight: "600", marginBottom: "12px",
+  },
+  keywordRow: { display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" },
+  keywordItem: { display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" },
+  kwTag: {
+    fontSize: "10px", letterSpacing: "0.06em", textTransform: "uppercase",
+    color: "var(--teal)", fontWeight: "600",
+  },
+  kwWord: {
+    fontFamily: "Cormorant Garamond, serif", fontSize: "26px",
+    fontWeight: "600", color: "var(--navy)",
+  },
+  kwArrow: {
+    fontSize: "12px", color: "var(--teal)", fontStyle: "italic",
+    padding: "0 4px", alignSelf: "center",
+  },
+  kwSimilarity: { fontSize: "12px", color: "var(--teal)", marginTop: "10px", fontStyle: "italic" },
   infoBlock: { display: "flex", flexDirection: "column", gap: "8px" },
   infoLabel: { fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal)", fontWeight: "600" },
-  infoText: { fontSize: "15px", color: "var(--navy)", lineHeight: "1.7" },
-  mnemonicText: { fontSize: "16px", color: "var(--navy)", lineHeight: "1.8", fontStyle: "italic", borderLeft: "3px solid var(--gold)", paddingLeft: "16px" },
+  mnemonicText: {
+    fontSize: "16px", color: "var(--navy)", lineHeight: "1.8",
+    fontStyle: "italic", borderLeft: "3px solid var(--gold)", paddingLeft: "16px",
+  },
   divider: { height: "1px", backgroundColor: "var(--sage)", opacity: 0.5 },
   imageCol: { width: "340px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "10px" },
   imageWrapper: { borderRadius: "12px", overflow: "hidden", border: "1px solid var(--sage)" },
@@ -437,7 +512,7 @@ const s = {
   emptyState: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", padding: "80px 0" },
   emptyIcon: { fontSize: "48px", color: "var(--sage)", fontFamily: "Cormorant Garamond, serif" },
   emptyTitle: { fontFamily: "Cormorant Garamond, serif", fontSize: "28px", fontWeight: "300", color: "var(--navy)" },
-  emptyText: { fontSize: "15px", color: "var(--teal)", textAlign: "center" },
+  emptyText: { fontSize: "15px", color: "var(--teal)", textAlign: "center", maxWidth: "400px", lineHeight: "1.7" },
   exampleRow: { display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", marginTop: "8px" },
   exampleChip: {
     padding: "8px 16px", borderRadius: "100px", border: "1px solid var(--sage)",
@@ -449,10 +524,8 @@ const s = {
   historyImage: { width: "100%", height: "200px", objectFit: "cover", display: "block" },
   downloadOverlay: {
     position: "absolute", top: "10px", right: "10px",
-    backgroundColor: "rgba(14,50,82,0.7)", border: "none",
-    borderRadius: "8px", padding: "8px", cursor: "pointer",
-    display: "flex", alignItems: "center", justifyContent: "center",
-    opacity: 0.85, transition: "opacity 0.2s",
+    backgroundColor: "rgba(14,50,82,0.7)", border: "none", borderRadius: "8px",
+    padding: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
   },
   historyContent: { padding: "16px", display: "flex", flexDirection: "column", gap: "8px" },
   historyTop: { display: "flex", justifyContent: "space-between", alignItems: "center" },
