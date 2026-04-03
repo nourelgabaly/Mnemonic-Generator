@@ -59,6 +59,7 @@ async def generate(req: MnemonicRequest):
             "meaning": mnemonic_data["meaning"],
             "keyword": mnemonic_data["keyword"],
             "keyword_similarity": mnemonic_data["keyword_similarity"],
+            "rosch_justification": mnemonic_data.get("rosch_justification", ""),
             "mnemonic": mnemonic_data["mnemonic"],
             "image_url": image_url
         }
@@ -68,7 +69,7 @@ async def generate(req: MnemonicRequest):
                 user_email=req.user_email,
                 word=result["word"],
                 simple_meaning=result["meaning"],
-                technique=f"Keyword Method ({result['native_language']} → {result['target_language']})",
+                technique=f"Keyword Method + Prototype Theory ({result['native_language']} → {result['target_language']})",
                 mnemonic=result["mnemonic"],
                 image_url=image_url
             )

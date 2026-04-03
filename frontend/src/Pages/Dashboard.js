@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { HiOutlineDownload } from "react-icons/hi";
 import { MdOutlineAutoAwesome } from "react-icons/md";
-import { TbHistory, TbLogout, TbLanguage } from "react-icons/tb";
+import { TbHistory, TbLogout, TbLanguage, TbBrain } from "react-icons/tb";
 
 const LANGUAGES = [
   "Arabic", "English", "French", "Spanish", "German",
@@ -97,9 +97,10 @@ export default function Dashboard({ user, onLogout }) {
           </div>
         </nav>
 
-        {/* Language settings in sidebar */}
         <div style={s.langSection}>
-          <p style={s.langTitle}><TbLanguage size={14} style={{ marginRight: 6 }} />Language Settings</p>
+          <p style={s.langTitle}>
+            <TbLanguage size={14} style={{ marginRight: 6 }} />Language Settings
+          </p>
           <div style={s.langField}>
             <label style={s.langLabel}>My language</label>
             <select style={s.select} value={nativeLang} onChange={e => setNativeLang(e.target.value)}>
@@ -115,6 +116,11 @@ export default function Dashboard({ user, onLogout }) {
           {nativeLang === targetLang && (
             <p style={s.langWarning}>Select two different languages</p>
           )}
+        </div>
+
+        <div style={s.theoryBadge}>
+          <TbBrain size={13} style={{ flexShrink: 0 }} />
+          <span style={s.theoryText}>Keyword Method + Rosch's Prototype Theory</span>
         </div>
 
         <div style={s.userSection}>
@@ -137,7 +143,8 @@ export default function Dashboard({ user, onLogout }) {
               <div>
                 <h1 style={s.pageTitle}>Visual Mnemonic Generator</h1>
                 <p style={s.pageSubtitle}>
-                  Using the Keyword Method — enter a {targetLang} word to get a memorable visual mnemonic in {nativeLang}
+                  Keyword Method + Prototype Theory — enter a {targetLang} word to get a
+                  cognitively optimized visual mnemonic in {nativeLang}
                 </p>
               </div>
             </div>
@@ -151,13 +158,11 @@ export default function Dashboard({ user, onLogout }) {
 
               <div style={s.inputRow}>
                 <div style={s.inputGroup}>
-                  <label style={s.label}>
-                    {targetLang} word to remember
-                  </label>
+                  <label style={s.label}>{targetLang} word to remember</label>
                   <input
                     style={s.input}
                     type="text"
-                    placeholder={`e.g. Ephemeral, Benevolent, Melancholy...`}
+                    placeholder="e.g. Ephemeral, Benevolent, Melancholy..."
                     value={word}
                     onChange={e => setWord(e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -168,9 +173,10 @@ export default function Dashboard({ user, onLogout }) {
                   onClick={handleGenerate}
                   disabled={loading || !word.trim() || nativeLang === targetLang}
                 >
-                  {loading ? (
-                    <span style={s.btnInner}><span style={s.spinner} />Generating</span>
-                  ) : "Generate"}
+                  {loading
+                    ? <span style={s.btnInner}><span style={s.spinner} />Generating</span>
+                    : "Generate"
+                  }
                 </button>
               </div>
 
@@ -195,7 +201,7 @@ export default function Dashboard({ user, onLogout }) {
                   <span style={{ ...s.dot, animationDelay: "0.2s" }} />
                   <span style={{ ...s.dot, animationDelay: "0.4s" }} />
                 </div>
-                <p style={s.loadingText}>Finding your keyword bridge and generating illustration...</p>
+                <p style={s.loadingText}>Applying Keyword Method and Prototype Theory...</p>
               </div>
             )}
 
@@ -208,8 +214,9 @@ export default function Dashboard({ user, onLogout }) {
                 <div style={s.emptyIcon}>◈</div>
                 <h3 style={s.emptyTitle}>How it works</h3>
                 <p style={s.emptyText}>
-                  MemBrain finds a word in your language that <em>sounds like</em> the foreign word,
-                  then creates a visual bridge that makes it impossible to forget.
+                  MemBrain finds a word in your language that <em>sounds like</em> the foreign word
+                  — chosen using Rosch's prototype theory so it's maximally memorable —
+                  then builds a vivid visual bridge that makes the meaning impossible to forget.
                 </p>
                 <div style={s.exampleRow}>
                   {["Ephemeral", "Benevolent", "Grave", "Veil", "Melancholy"].map(ex => (
@@ -242,7 +249,8 @@ export default function Dashboard({ user, onLogout }) {
                   <div key={i} style={s.historyCard}>
                     <div style={s.historyImageWrapper}>
                       <img src={item.image_url} alt={item.word} style={s.historyImage} />
-                      <button style={s.downloadOverlay} onClick={() => handleDownload(item.image_url, item.word)} title="Download">
+                      <button style={s.downloadOverlay}
+                        onClick={() => handleDownload(item.image_url, item.word)} title="Download">
                         <HiOutlineDownload size={18} color="white" />
                       </button>
                     </div>
@@ -254,7 +262,9 @@ export default function Dashboard({ user, onLogout }) {
                       <p style={s.historyMeaning}>{item.simple_meaning}</p>
                       <p style={s.historyMnemonic}>{item.mnemonic}</p>
                       <p style={s.historyDate}>
-                        {new Date(item.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        {new Date(item.created_at).toLocaleDateString("en-US", {
+                          month: "short", day: "numeric", year: "numeric"
+                        })}
                       </p>
                     </div>
                   </div>
@@ -266,9 +276,9 @@ export default function Dashboard({ user, onLogout }) {
       </main>
 
       <style>{`
-        @keyframes bounce { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-8px);opacity:1} }
-        @keyframes spin { to{transform:rotate(360deg)} }
-        select option { background: white; color: #0E3252; }
+        @keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-8px);opacity:1}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        select option{background:white;color:#0E3252}
       `}</style>
     </div>
   );
@@ -315,6 +325,17 @@ function ResultCard({ result, onDownload, downloading }) {
             <p style={s.kwSimilarity}>{result.keyword_similarity}</p>
           </div>
 
+          {/* Rosch justification */}
+          {result.rosch_justification && (
+            <div style={s.roschBox}>
+              <div style={s.roschHeader}>
+                <TbBrain size={14} color="#68858F" />
+                <span style={s.roschLabel}>Why this keyword is cognitively optimal</span>
+              </div>
+              <p style={s.roschText}>{result.rosch_justification}</p>
+            </div>
+          )}
+
           <div style={s.divider} />
 
           {/* Mnemonic */}
@@ -329,7 +350,7 @@ function ResultCard({ result, onDownload, downloading }) {
           <div style={s.imageWrapper}>
             <img src={result.image_url} alt={`Mnemonic for ${result.word}`} style={s.image} />
           </div>
-          <p style={s.imageCaption}>Visual keyword bridge</p>
+          <p style={s.imageCaption}>Prototype-optimized visual mnemonic</p>
         </div>
       </div>
     </div>
@@ -340,7 +361,7 @@ const s = {
   page: { display: "flex", minHeight: "100vh", backgroundColor: "var(--cream)" },
   sidebar: {
     width: "272px", backgroundColor: "var(--navy)", padding: "32px 24px",
-    display: "flex", flexDirection: "column", gap: "24px", flexShrink: 0,
+    display: "flex", flexDirection: "column", gap: "20px", flexShrink: 0,
   },
   brand: { display: "flex", alignItems: "center", gap: "12px" },
   brandName: {
@@ -364,7 +385,7 @@ const s = {
   },
   langSection: {
     display: "flex", flexDirection: "column", gap: "10px",
-    padding: "16px", borderRadius: "10px",
+    padding: "14px", borderRadius: "10px",
     backgroundColor: "rgba(197,212,208,0.08)",
     border: "1px solid rgba(197,212,208,0.12)",
   },
@@ -376,13 +397,23 @@ const s = {
   langLabel: { fontSize: "11px", color: "rgba(197,212,208,0.6)", letterSpacing: "0.04em" },
   select: {
     padding: "8px 10px", fontSize: "13px", borderRadius: "8px",
-    border: "1px solid rgba(197,212,208,0.2)", backgroundColor: "rgba(14,50,82,0.6)",
+    border: "1px solid rgba(197,212,208,0.2)",
+    backgroundColor: "rgba(14,50,82,0.6)",
     color: "var(--cream)", outline: "none", cursor: "pointer", width: "100%",
   },
   langWarning: { fontSize: "11px", color: "#E8836A", marginTop: "2px" },
+  theoryBadge: {
+    display: "flex", alignItems: "flex-start", gap: "7px",
+    padding: "10px 12px", borderRadius: "8px",
+    backgroundColor: "rgba(221,178,115,0.1)",
+    border: "1px solid rgba(221,178,115,0.2)",
+    color: "var(--gold)",
+  },
+  theoryText: { fontSize: "11px", lineHeight: "1.5", fontStyle: "italic" },
   userSection: {
     marginTop: "auto", display: "flex", alignItems: "center", gap: "10px",
-    padding: "12px", borderRadius: "10px", backgroundColor: "rgba(197,212,208,0.08)",
+    padding: "12px", borderRadius: "10px",
+    backgroundColor: "rgba(197,212,208,0.08)",
   },
   avatar: {
     width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--gold)",
@@ -396,7 +427,7 @@ const s = {
   main: { flex: 1, padding: "48px 56px", display: "flex", flexDirection: "column", gap: "24px", overflowY: "auto" },
   topBar: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
   pageTitle: { fontFamily: "Cormorant Garamond, serif", fontSize: "36px", fontWeight: "500", color: "var(--navy)" },
-  pageSubtitle: { fontSize: "14px", color: "var(--teal)", marginTop: "4px" },
+  pageSubtitle: { fontSize: "14px", color: "var(--teal)", marginTop: "4px", lineHeight: "1.6" },
   inputCard: {
     backgroundColor: "white", borderRadius: "16px", padding: "28px",
     display: "flex", flexDirection: "column", gap: "16px",
@@ -474,7 +505,7 @@ const s = {
     color: "var(--teal)", border: "none", borderRadius: "8px", cursor: "not-allowed",
   },
   resultBody: { display: "flex", gap: "40px" },
-  textCol: { flex: 1, display: "flex", flexDirection: "column", gap: "20px" },
+  textCol: { flex: 1, display: "flex", flexDirection: "column", gap: "16px" },
   keywordBox: {
     backgroundColor: "var(--cream)", borderRadius: "12px", padding: "18px",
     border: "1.5px solid var(--sage)",
@@ -485,19 +516,20 @@ const s = {
   },
   keywordRow: { display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" },
   keywordItem: { display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" },
-  kwTag: {
-    fontSize: "10px", letterSpacing: "0.06em", textTransform: "uppercase",
+  kwTag: { fontSize: "10px", letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--teal)", fontWeight: "600" },
+  kwWord: { fontFamily: "Cormorant Garamond, serif", fontSize: "26px", fontWeight: "600", color: "var(--navy)" },
+  kwArrow: { fontSize: "12px", color: "var(--teal)", fontStyle: "italic", padding: "0 4px", alignSelf: "center" },
+  kwSimilarity: { fontSize: "12px", color: "var(--teal)", marginTop: "10px", fontStyle: "italic" },
+  roschBox: {
+    backgroundColor: "white", borderRadius: "10px", padding: "14px 16px",
+    border: "1px solid var(--sage)",
+  },
+  roschHeader: { display: "flex", alignItems: "center", gap: "7px", marginBottom: "6px" },
+  roschLabel: {
+    fontSize: "11px", letterSpacing: "0.06em", textTransform: "uppercase",
     color: "var(--teal)", fontWeight: "600",
   },
-  kwWord: {
-    fontFamily: "Cormorant Garamond, serif", fontSize: "26px",
-    fontWeight: "600", color: "var(--navy)",
-  },
-  kwArrow: {
-    fontSize: "12px", color: "var(--teal)", fontStyle: "italic",
-    padding: "0 4px", alignSelf: "center",
-  },
-  kwSimilarity: { fontSize: "12px", color: "var(--teal)", marginTop: "10px", fontStyle: "italic" },
+  roschText: { fontSize: "13px", color: "var(--navy)", lineHeight: "1.65", opacity: 0.85 },
   infoBlock: { display: "flex", flexDirection: "column", gap: "8px" },
   infoLabel: { fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal)", fontWeight: "600" },
   mnemonicText: {
@@ -512,7 +544,7 @@ const s = {
   emptyState: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", padding: "80px 0" },
   emptyIcon: { fontSize: "48px", color: "var(--sage)", fontFamily: "Cormorant Garamond, serif" },
   emptyTitle: { fontFamily: "Cormorant Garamond, serif", fontSize: "28px", fontWeight: "300", color: "var(--navy)" },
-  emptyText: { fontSize: "15px", color: "var(--teal)", textAlign: "center", maxWidth: "400px", lineHeight: "1.7" },
+  emptyText: { fontSize: "15px", color: "var(--teal)", textAlign: "center", maxWidth: "420px", lineHeight: "1.7" },
   exampleRow: { display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", marginTop: "8px" },
   exampleChip: {
     padding: "8px 16px", borderRadius: "100px", border: "1px solid var(--sage)",
