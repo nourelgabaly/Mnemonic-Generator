@@ -197,7 +197,7 @@ export default function Dashboard({ user, onLogout }) {
                       <span key={ex} style={s.exampleChip} onClick={() => setWord(ex)}>{ex}</span>
                     ))}
                   </div>
-                  <p style={s.exampleLabel} style={{...s.exampleLabel, marginTop: "12px"}}>Lists & sequences</p>
+                  <p style={{...s.exampleLabel, marginTop: "12px"}}>Lists & sequences</p>
                   <div style={s.exampleRow}>
                     {MEDICAL_EXAMPLES.acronym.map(ex => (
                       <span key={ex} style={{...s.exampleChip, borderColor: "#DDB273", color: "#8a6a3a"}} onClick={() => setWord(ex)}>{ex}</span>
