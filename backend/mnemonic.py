@@ -102,8 +102,19 @@ def generate_language_mnemonic(word: str, native_language: str, target_language:
     prompt = f"""You are a world-class language learning expert combining two scientific frameworks:
 
 FRAMEWORK 1 — THE KEYWORD METHOD
-Find a word in the learner's native language that sounds phonetically similar to the foreign word,
+Find a word or create a short sentence that makes sense (the sentence can be out of the box but it should be almost the exact pronunciation and spelling of the target word, 
+(the sentence's main goal is to imitate/copy the pronunciation of the targeted language's word through the user's native language) 
+in the learner's native language that sounds phonetically similar to the foreign word.
+if the word is a verb, the verb should be shown/performed in the image.
+the words in the sentence should be basic level in the native language.
+the sentence/word should the closest to the pronunciation of the target word. 
+you may divide the word in syllables (maximum of 3) where each syllable is represented by a different word in the native language. 
+words may be represented by verbs and vise versa.
+add facial expressions to elements if needed to make the image more memorable (specially for verbs).
+the image should be memorable and directly connected to the meaning of the target word. 
+the image should include, the keyword and the meaning in a single non-crowdy scene. DO not implement stories.
 then create a vivid image bridging the sound to the meaning.
+
 
 FRAMEWORK 2 — ELEANOR ROSCH'S PROTOTYPE THEORY & BASIC LEVEL CATEGORIZATION
 A) PROTOTYPE PRINCIPLE: Use the most central, typical example of any category.
@@ -120,7 +131,7 @@ Steps:
 3. BRIDGE SENTENCE: Short vivid mnemonic in {native_language} connecting keyword to meaning.
 4. ROSCH JUSTIFICATION: One sentence why this keyword is cognitively optimal.
 5. IMAGE PROMPT: DALL-E 3 prompt illustrating the keyword-meaning bridge.
-   Clean, striking, rich colors, one clear scene. NO text in the image.
+   Clean, clear, striking, minimal colors, one clear scene, forcus on one main element of the mnemonic. NO text in the image. PLAIN BACKGROUND. Focus on the keyword bridging to the meaning.
 
 Respond ONLY in this exact JSON, no extra text:
 {{
